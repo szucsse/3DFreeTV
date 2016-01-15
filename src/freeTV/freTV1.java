@@ -8,7 +8,10 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
 import java.awt.event.*;
 import java.io.File;
+import java.io.FileFilter;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.prefs.Preferences;
 
 public class freTV1 extends JFrame implements ActionListener{
 	private static final long serialVersionUID = 1L;
@@ -37,10 +40,12 @@ public class freTV1 extends JFrame implements ActionListener{
 	JLabel stalabel = new JLabel();
 	JToolBar toolbar = new JToolBar();
 	
-	String []imagepath = new String[100];//文件路径
+	ArrayList<String> imagepath=new ArrayList<String>();//文件路径
+	
 	int pos = 0;//记录位置
 	int num = 0;//记录图片数目
 	int current = 0;
+	int flag = 0 ;
   public freTV1(){
    {
    	//主窗体
@@ -226,6 +231,7 @@ public class freTV1 extends JFrame implements ActionListener{
     window.add(prior);
 	window.add(next);
     window.add(label);
+    window.requestFocus(true);
 	
 	//事件窗口
 	active.setBorder(new EtchedBorder(EtchedBorder.RAISED));
@@ -258,60 +264,120 @@ public class freTV1 extends JFrame implements ActionListener{
 	mopen.addActionListener(this);
 	prior.addActionListener(this);
 	next.addActionListener(this);
-	mprior.addActionListener(this);
-	mnext.addActionListener(this);
-    }
+	//此处加了很长一段为了增加键盘左键快捷键。
+	prior.addKeyListener(new KeyAdapter()
+			{
+				public void keyPressed(KeyEvent k) {
+					if(k.getKeyCode()==KeyEvent.VK_LEFT )
+					{
+						priorPicture();
+					}
+
+					else if(k.getKeyCode()==KeyEvent.VK_RIGHT )
+					{
+						nextPicture();
+					}
+				}
+			}
+		);
+	next.addKeyListener(new KeyAdapter()
+	{
+		public void keyPressed(KeyEvent k) {
+			if(k.getKeyCode()==KeyEvent.VK_LEFT )
+			{
+				priorPicture();
+			}
+
+			else if(k.getKeyCode()==KeyEvent.VK_RIGHT )
+			{
+				nextPicture();
+			}
+		}
+	}
+);
+		mprior.addActionListener(this);
+		mnext.addActionListener(this);
+	    }
     } 
-   //事件处理
   //事件处理
  	public void actionPerformed(ActionEvent e){
      	//打开文件
-     	if(e.getSource()== open||e.getSource()==mopen){
-     		JFileChooser fileChooser=new JFileChooser();
-     		//创建文件扩展名过滤器，只显示图片格式的文件
+ 		//打开文件
+    	if(e.getSource()== open||e.getSource()==mopen){
+    		flag=0;
+    		imagepath.clear();
+    		//保存上一次打开路径
+    		Preferences pref = Preferences.userRoot().node(this.getClass().getName());
+    		String lastPath = pref.get("lastPath", "");
+    		JFileChooser fileChooser =null;
+    		if(!lastPath.equals("")){
+    			fileChooser = new JFileChooser(lastPath);
+    		}
+    		else
+    			fileChooser = new JFileChooser();
+
+    		//创建文件扩展名过滤器，只显示图片格式的文件
     		FileNameExtensionFilter filter=new FileNameExtensionFilter("JPEG,GIF,BMP,PNG,SVG,PSD,EPS,AI Images","jpg","jpeg","gif","bmp","png","svg","psd","eps","ai");
     		fileChooser.setFileFilter(filter);									//为文件对话框设置扩展名过滤器
-     		fileChooser.setMultiSelectionEnabled(true);
-     		fileChooser.setDialogTitle("Open");
-     		int option = fileChooser.showOpenDialog(this);
-     		if(option==JFileChooser.APPROVE_OPTION){
-     		File fileArray[] = fileChooser.getSelectedFiles();   
-     		String filelist = "nothing";
-     		current  = num;
-     		num += fileArray.length;
-     		if(fileArray.length>0)
-     			filelist = fileArray[0].getName();
-     		 for (int i = 0; i < fileArray.length; i++) {  
-  	            filelist += ", " + fileArray[i].getName( );  
-  	          }
-     		 for (int j = current,i = 0; j < num&&i < fileArray.length;j++,i++) {  
-   	            imagepath[j] = fileArray[i].getPath();  
-   	          }
-     		pos = current;
-     		jtf.setForeground(Color.WHITE);
-     		jtf.setText("you choosed:"+filelist);//显示状态
-     		 ImageIcon windowlabel = new ImageIcon(imagepath[pos]);
-     	    if(windowlabel.getIconWidth()>850||windowlabel.getIconHeight()>540)
- 				for(double i=0.9;i>0;i-=0.1){
- 					{
- 						double imgLen = i*windowlabel.getIconWidth();
- 						double imgHei = i*windowlabel.getIconHeight();
- 						if(imgLen<=850 && imgHei<=540)
- 						{
- 							windowlabel.setImage(windowlabel.getImage().getScaledInstance((int)imgLen,(int)imgHei, Image.SCALE_SMOOTH));
- 							break;
- 						}
- 					}
- 				}
-     	    //如果图片大小超过，则创建一个800X500的压缩版本
-     	    label.setIcon(windowlabel); 
-     		}//if
-     		else{
-     			jtf.setForeground(Color.RED);
-     			jtf.setText(" you canceled");	
-     		}
-
-     	}
+    		fileChooser.setMultiSelectionEnabled(true);
+    		fileChooser.setDialogTitle("Open");
+    		int option = fileChooser.showOpenDialog(this);
+    		if(option==JFileChooser.APPROVE_OPTION){
+    			File fileArray[] = fileChooser.getSelectedFiles();   
+    			String filelist = "nothing";
+    			num = fileArray.length;
+    			filelist = num + "pictures";  
+    			if(num==1){
+    				String firstSelect=fileArray[0].getPath();
+    				File ff=new File(fileArray[0].getPath());
+    				File file=ff.getParentFile();
+    				FileFilter fileFilter = new FileFilter() {		//设置过滤器
+    			        public boolean accept(File file) {
+    			        	String s=file.getName().toLowerCase();
+    			            if (s.endsWith(".jpg") || s.endsWith(".jpeg") || s.endsWith(".png") || s.endsWith(".gif")) {
+    			                return true;
+    			            }else if(s.endsWith(".bmp") || s.endsWith(".svg") || s.endsWith(".psd") || s.endsWith(".eps") || s.endsWith(".ai")) {
+    			                return true;
+    			            }
+    			            return false;
+    			        }
+    			    };		
+    				fileArray=file.listFiles(fileFilter);		//过滤出图片格式的文件
+    				num = fileArray.length;
+    				for(int i=0;i<fileArray.length;i++){
+    					if(fileArray[i].getPath().equals(firstSelect)){
+    						flag=i;
+    						pos=flag;
+    						break;
+    					}
+    				}
+    			}
+    			pref.put("lastPath", fileArray[0].getPath()); //保存路径
+    			for (int i = 0; i < fileArray.length; i++) {  
+    				imagepath.add(fileArray[i].getPath());  
+  	          	}
+    			jtf.setForeground(Color.WHITE);
+    			jtf.setText("you choosed:"+filelist);//显示状态
+    			String path = fileArray[flag].getPath();
+    			ImageIcon windowlabel = new ImageIcon(path);
+    			if(windowlabel.getIconWidth()>850||windowlabel.getIconHeight()>540){
+    				for(double i=0.9;i>0;i-=0.1){
+						double imgLen = i*windowlabel.getIconWidth();
+						double imgHei = i*windowlabel.getIconHeight();
+						if(imgLen<=850 && imgHei<=540){
+							windowlabel.setImage(windowlabel.getImage().getScaledInstance((int)imgLen,(int)imgHei, Image.SCALE_FAST));
+							break;
+						}
+					}
+				}
+	    	    //如果图片大小超过，则等比例压缩
+	    	    label.setIcon(windowlabel); 
+	    	}//if
+	    	else{
+	    		jtf.setForeground(Color.RED);
+	    		jtf.setText(" you canceled");	
+	    	}
+    	}
 
     	//退出程序
     	else if(e.getSource()==exit){
@@ -337,41 +403,23 @@ public class freTV1 extends JFrame implements ActionListener{
     	}
     	//上一个
     	else if(e.getSource()== prior||e.getSource()==mprior){
-    		if(pos == 0){
-    			pos = num-1;
-    		}
-    		else{
-    			pos--;
-    		}
-			ImageIcon windowlabel = new ImageIcon(imagepath[pos]);
-			if(windowlabel.getIconWidth()>850||windowlabel.getIconHeight()>540)
-				for(double i=0.9;i>0;i-=0.1){
-					{
-						double imgLen = i*windowlabel.getIconWidth();
-						double imgHei = i*windowlabel.getIconHeight();
-						if(imgLen<=850 && imgHei<=540)
-						{
-							windowlabel.setImage(windowlabel.getImage().getScaledInstance((int)imgLen,(int)imgHei, Image.SCALE_FAST));
-							break;
-						}
-					}
-				
-				}
-				
-			
-      	    label.setIcon(windowlabel);
-    		jtf.setForeground(Color.WHITE);
-			jtf.setText(imagepath[pos]);
+    		priorPicture();
     	}
     	//下一个
     	else if(e.getSource()== next||e.getSource()==mnext){
-    		if(pos == num-1){
+    		nextPicture();
+    	}
+
+    }    	
+ 	public void nextPicture()
+ 	{
+  		if(pos == num-1){
     	    pos = 0;	
     		}
     		else{
     			pos++;
     		}
-    		ImageIcon windowlabel = new ImageIcon(imagepath[pos]);
+    		ImageIcon windowlabel = new ImageIcon(imagepath.get(pos));
 			if(windowlabel.getIconWidth()>850||windowlabel.getIconHeight()>540)
 				for(double i=0.9;i>0;i-=0.1){
 					{
@@ -387,10 +435,34 @@ public class freTV1 extends JFrame implements ActionListener{
 				}
       	    label.setIcon(windowlabel);
       	    jtf.setForeground(Color.WHITE);
-  		    jtf.setText(imagepath[pos]);	
-    	}
-
-    }    	
+  		    jtf.setText(imagepath.get(pos));	
+ 	}
+ 	public void priorPicture()
+ 	{
+  		if(pos == 0){
+			pos = num-1;
+		}
+		else{
+			pos--;
+		}
+		ImageIcon windowlabel = new ImageIcon(imagepath.get(pos));
+		if(windowlabel.getIconWidth()>850||windowlabel.getIconHeight()>540)
+			for(double i=0.9;i>0;i-=0.1){
+				{
+					double imgLen = i*windowlabel.getIconWidth();
+					double imgHei = i*windowlabel.getIconHeight();
+					if(imgLen<=850 && imgHei<=540)
+					{
+						windowlabel.setImage(windowlabel.getImage().getScaledInstance((int)imgLen,(int)imgHei, Image.SCALE_FAST));
+						break;
+					}
+				}
+			
+			}
+  	    label.setIcon(windowlabel);
+		jtf.setForeground(Color.WHITE);
+		jtf.setText(imagepath.get(pos));
+ 	}
 	
     public static void main(String args[]){
     	 java.awt.EventQueue.invokeLater(new Runnable(){
