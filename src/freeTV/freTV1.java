@@ -1,14 +1,16 @@
-
 package freeTV;
 import javax.imageio.ImageIO;
+
 import javax.swing.*;
 import javax.swing.border.EtchedBorder;
+import javax.swing.filechooser.FileNameExtensionFilter;
+
 import java.awt.*;
 import java.awt.event.*;
 import java.io.File;
 import java.io.IOException;
-//所有图片放在工程src文件夹下img包中
-public class freeTV extends JFrame implements ActionListener{
+
+public class freTV1 extends JFrame implements ActionListener{
 	private static final long serialVersionUID = 1L;
 	
 	//组件
@@ -26,13 +28,20 @@ public class freeTV extends JFrame implements ActionListener{
     JTextField jtf;//底部状态栏信息
     
 	JPanel background = new JPanel();
+	//String backstr = "/img/bb.jpg";
+	//Image backImage =new ImageIcon(this.getClass().getResource(backstr)).getImage();  
 	JPanel window = new JPanel();
  	JLabel label  = new JLabel();
 	JPanel active = new JPanel();
 	JPanel monitor = new JPanel();
 	JLabel stalabel = new JLabel();
 	JToolBar toolbar = new JToolBar();
-  public freeTV(){
+	
+	String []imagepath = new String[100];//文件路径
+	int pos = 0;//记录位置
+	int num = 0;//记录图片数目
+	int current = 0;
+  public freTV1(){
    {
    	//主窗体
    	frame = new JFrame("3DFreeTV");
@@ -47,20 +56,19 @@ public class freeTV extends JFrame implements ActionListener{
 	frame.setLocationRelativeTo(null);
 	frame.setVisible(true);
 	Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();//获取主屏幕大小
-        //各个组件位置以及大小会在之后根据显示器进行调整
 	String scrSize = new String("ScreenSize Width:"+screenSize.width+" Hight:"+screenSize.height);
 	//设置关闭时提示信息
-	frame.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
-    frame.addWindowListener(new WindowAdapter() {
+	frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+   /* frame.addWindowListener(new WindowAdapter() {
         public void windowClosing(WindowEvent e) {
         	Object[] o = {"取消","退出"};
             int a = JOptionPane.showOptionDialog(frame, "确认关闭将退出程序", "温馨提示",
                     JOptionPane.YES_NO_OPTION,JOptionPane.WARNING_MESSAGE,null,o,o[0]);
             if (a == 1) {
-            	 System.exit(0);
+            	 frame.dispose();
             }
         }
-    });
+    });*/
 	
 	//菜单
 	menubar = new JMenuBar();
@@ -151,23 +159,23 @@ public class freeTV extends JFrame implements ActionListener{
 	window.setPreferredSize(new Dimension(851,545));
 	
 	label.setSize(new Dimension(851,545));
-	label.setHorizontalAlignment(0);//使居中
+	label.setHorizontalAlignment(0);
 	
 	prior = new JButton("");
 	prior.setToolTipText("prior view");
-	prior.setBounds(-10, -120, 200, 800);
+	prior.setBounds(-10, -120, 100, 800);
 	prior.setContentAreaFilled(false);//去除按钮内容绘制
 	prior.setBorder(null);//去除按钮边框
 	prior.setFocusPainted(false);//去除按钮焦点边框
 	prior.addMouseListener(new MouseAdapter()
 	{
-		public void mouseEntered(MouseEvent e){//鼠标移入
-			String str = "/img/prior.png";//展示图标
+		public void mouseEntered(MouseEvent e){
+			String str = "/img/prior.png";
 			ImageIcon iconn = new ImageIcon(this.getClass().getResource(str));
 			prior.setIcon(iconn);
 		}
 		public void mouseExited(MouseEvent e){
-			String str = "/img/blank.png";//透明空白图片blank，即设置prior的图标为透明
+			String str = "/img/blank.png";
 			ImageIcon iconn = new ImageIcon(this.getClass().getResource(str));
 			prior.setIcon(iconn);
 		}
@@ -186,7 +194,7 @@ public class freeTV extends JFrame implements ActionListener{
 	
 	next = new JButton();
 	next.setToolTipText("next view");
-	next.setBounds(760, -120, 200, 800);
+	next.setBounds(760, -120, 100, 800);
 	next.setContentAreaFilled(false);
 	next.setBorder(null);
 	next.setFocusPainted(false);
@@ -213,6 +221,7 @@ public class freeTV extends JFrame implements ActionListener{
 			ImageIcon iconn = new ImageIcon(str);
 			next.setIcon(iconn);	
 		}
+		
 	});
     window.add(prior);
 	window.add(next);
@@ -254,52 +263,139 @@ public class freeTV extends JFrame implements ActionListener{
     }
     } 
    //事件处理
-	public void actionPerformed(ActionEvent e){
-    	//打开文件
-    	if(e.getSource()== open||e.getSource()==mopen){
-    		JFileChooser fileChooser=new JFileChooser();
-    		fileChooser.setCurrentDirectory(new File("."));
-    		fileChooser.setDialogTitle("Open");
-    		fileChooser.showOpenDialog(this);
-    		fileChooser.setVisible(true);
-    	    String path = fileChooser.getSelectedFile().getPath();
-    	    System.out.print(path);
-    	    ImageIcon windowlabel = new ImageIcon(path);
-    	    label.setIcon(windowlabel);//设置window中的label的图片   	    
-            	    
-    	}
+  //事件处理
+ 	public void actionPerformed(ActionEvent e){
+     	//打开文件
+     	if(e.getSource()== open||e.getSource()==mopen){
+     		JFileChooser fileChooser=new JFileChooser();
+     		//创建文件扩展名过滤器，只显示图片格式的文件
+    		FileNameExtensionFilter filter=new FileNameExtensionFilter("JPEG,GIF,BMP,PNG,SVG,PSD,EPS,AI Images","jpg","jpeg","gif","bmp","png","svg","psd","eps","ai");
+    		fileChooser.setFileFilter(filter);									//为文件对话框设置扩展名过滤器
+     		fileChooser.setMultiSelectionEnabled(true);
+     		fileChooser.setDialogTitle("Open");
+     		int option = fileChooser.showOpenDialog(this);
+     		if(option==JFileChooser.APPROVE_OPTION){
+     		File fileArray[] = fileChooser.getSelectedFiles();   
+     		String filelist = "nothing";
+     		current  = num;
+     		num += fileArray.length;
+     		if(fileArray.length>0)
+     			filelist = fileArray[0].getName();
+     		 for (int i = 0; i < fileArray.length; i++) {  
+  	            filelist += ", " + fileArray[i].getName( );  
+  	          }
+     		 for (int j = current,i = 0; j < num&&i < fileArray.length;j++,i++) {  
+   	            imagepath[j] = fileArray[i].getPath();  
+   	          }
+     		pos = current;
+     		jtf.setForeground(Color.WHITE);
+     		jtf.setText("you choosed:"+filelist);//显示状态
+     		 ImageIcon windowlabel = new ImageIcon(imagepath[pos]);
+     	    if(windowlabel.getIconWidth()>850||windowlabel.getIconHeight()>540)
+ 				for(double i=0.9;i>0;i-=0.1){
+ 					{
+ 						double imgLen = i*windowlabel.getIconWidth();
+ 						double imgHei = i*windowlabel.getIconHeight();
+ 						if(imgLen<=850 && imgHei<=540)
+ 						{
+ 							windowlabel.setImage(windowlabel.getImage().getScaledInstance((int)imgLen,(int)imgHei, Image.SCALE_SMOOTH));
+ 							break;
+ 						}
+ 					}
+ 				}
+     	    //如果图片大小超过，则创建一个800X500的压缩版本
+     	    label.setIcon(windowlabel); 
+     		}//if
+     		else{
+     			jtf.setForeground(Color.RED);
+     			jtf.setText(" you canceled");	
+     		}
+
+     	}
+
     	//退出程序
-    	if(e.getSource()==exit){
-    		System.exit(0);
+    	else if(e.getSource()==exit){
+    		Object[] o = {"取消","退出"};
+            int a = JOptionPane.showOptionDialog(frame, "确认关闭将退出程序", "温馨提示",
+                    JOptionPane.YES_NO_OPTION,JOptionPane.WARNING_MESSAGE,null,o,o[0]);
+            if (a == 1) {
+            	 frame.dispose();
+            }
     	}
     	//add setting menu item here
     	//帮助
-    	if(e.getSource()==Help){
+    	else if(e.getSource()==Help){
     		
     	}
     	//关于程序
-    	if(e.getSource()==aboutfreetv){
+    	else if(e.getSource()==aboutfreetv){
     		
     	}
     	//反馈
-    	if(e.getSource()==feedback){
+    	else if(e.getSource()==feedback){
     		
     	}
     	//上一个
-    	if(e.getSource()== prior||e.getSource()==mprior){
-    		
+    	else if(e.getSource()== prior||e.getSource()==mprior){
+    		if(pos == 0){
+    			pos = num-1;
+    		}
+    		else{
+    			pos--;
+    		}
+			ImageIcon windowlabel = new ImageIcon(imagepath[pos]);
+			if(windowlabel.getIconWidth()>850||windowlabel.getIconHeight()>540)
+				for(double i=0.9;i>0;i-=0.1){
+					{
+						double imgLen = i*windowlabel.getIconWidth();
+						double imgHei = i*windowlabel.getIconHeight();
+						if(imgLen<=850 && imgHei<=540)
+						{
+							windowlabel.setImage(windowlabel.getImage().getScaledInstance((int)imgLen,(int)imgHei, Image.SCALE_FAST));
+							break;
+						}
+					}
+				
+				}
+				
+			
+      	    label.setIcon(windowlabel);
+    		jtf.setForeground(Color.WHITE);
+			jtf.setText(imagepath[pos]);
     	}
     	//下一个
-    	if(e.getSource()== next||e.getSource()==mnext){
-    		
+    	else if(e.getSource()== next||e.getSource()==mnext){
+    		if(pos == num-1){
+    	    pos = 0;	
+    		}
+    		else{
+    			pos++;
+    		}
+    		ImageIcon windowlabel = new ImageIcon(imagepath[pos]);
+			if(windowlabel.getIconWidth()>850||windowlabel.getIconHeight()>540)
+				for(double i=0.9;i>0;i-=0.1){
+					{
+						double imgLen = i*windowlabel.getIconWidth();
+						double imgHei = i*windowlabel.getIconHeight();
+						if(imgLen<=850 && imgHei<=540)
+						{
+							windowlabel.setImage(windowlabel.getImage().getScaledInstance((int)imgLen,(int)imgHei, Image.SCALE_SMOOTH));
+							break;
+						}
+					}
+				
+				}
+      	    label.setIcon(windowlabel);
+      	    jtf.setForeground(Color.WHITE);
+  		    jtf.setText(imagepath[pos]);	
     	}
-    	
-    }
-    
+
+    }    	
+	
     public static void main(String args[]){
     	 java.awt.EventQueue.invokeLater(new Runnable(){
     	   public  void run(){
-    		new freeTV();   
+    		new freTV1();   
     	   }
        });
     }
